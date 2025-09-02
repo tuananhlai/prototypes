@@ -46,6 +46,9 @@ func main() {
 		w.WriteHeader(200)
 		w.Write([]byte("pong"))
 	})
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "index.html")
+	})
 	http.HandleFunc("/sse", sse)
 
 	log.Printf("HTTP server started on %s\n", port)
