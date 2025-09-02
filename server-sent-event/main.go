@@ -12,8 +12,8 @@ const (
 )
 
 func sse(w http.ResponseWriter, r *http.Request) {
+	// https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events#sending_events_from_the_server
 	w.Header().Set("Content-Type", "text/event-stream")
-	w.Header().Set("Cache-Control", "no-cache")
 
 	flusher, ok := w.(http.Flusher)
 	if !ok {
