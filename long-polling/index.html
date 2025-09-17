@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <style>
+      body {
+        font-family: sans-serif;
+        background-color: #f4f4f9;
+        color: #333;
+      }
+      #messages {
+        list-style-type: none;
+        padding: 0;
+      }
+      #messages li {
+        background-color: #fff;
+        margin: 5px 0;
+        padding: 10px;
+        border-radius: 4px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Polling Go Server 📡</h1>
+    <ul id="messages"></ul>
+  </body>
+  <script>
+    const messageList = document.querySelector("#messages");
+
+    async function wait(ms) {
+      return new Promise((resolve) => setTimeout(resolve, ms));
+    }
+
+    async function poll() {
+      while (true) {
+        try {
+          const res = await fetch("/poll");
+
+          if (res.status === 200) {
+            const msg = await res.text();
+            const newElem = document.createElement("li");
+            newElem.textContent = msg;
+            messageList.appendChild(newElem);
+          } else if (res.status === 204) {
+            console.log("Server timeout.");
+            const newElem = document.createElement("li");
+            newElem.textContent = "Request timed out.";
+            messageList.appendChild(newElem);
+          } else {
+            throw new Error("unexpected error code");
+          }
+        } catch (e) {
+          console.error("Error polling: ", e);
+          await wait(1000);
+        }
+      }
+    }
+
+    poll();
+  </script>
+</html>
