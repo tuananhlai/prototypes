@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <style>
+      body {
+        font-family: sans-serif;
+        background-color: #f4f4f9;
+        color: #333;
+      }
+      #messages {
+        list-style-type: none;
+        padding: 0;
+      }
+      #messages li {
+        background-color: #fff;
+        margin: 5px 0;
+        padding: 10px;
+        border-radius: 4px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Message Board 📡</h1>
+    <form id="messageForm">
+      <label>
+        Message
+        <input name="message" type="text" />
+      </label>
+      <button type="submit">Submit</button>
+    </form>
+    <ul id="messages"></ul>
+  </body>
+  <script>
+    const messageList = document.querySelector("#messages");
+    const messageForm = document.querySelector("#messageForm");
+
+    const displayResponse = (msg) => {
+      const newElem = document.createElement("li");
+      newElem.textContent = msg;
+      messageList.appendChild(newElem);
+    };
+
+    const socket = new WebSocket("ws://localhost:8080/ws");
+
+    socket.addEventListener("message", (e) => {
+      displayResponse(e.data);
+    });
+
+    messageForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const fd = new FormData(messageForm);
+      const msg = fd.get("message");
+
+      socket.send(msg);
+      messageForm.reset();
+    });
+  </script>
+</html>
