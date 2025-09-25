@@ -11,8 +11,24 @@ services:
       REPLICA_PASSWORD: ${REPLICA_PASSWORD}
     volumes:
       - mysql-primary-data:/var/lib/mysql
+      - ./config/primary.cnf:/etc/mysql/conf.d/my.cnf
+      - ./init:/docker-entrypoint-initdb.d/
     ports:
       - "43306:3306"
 
+  mysql-replica:
+    image: public.ecr.aws/docker/library/mysql:8.4
+    env_file: .env
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    depends_on:
+      - mysql-primary
+    volumes:
+      - mysql-replica-data:/var/lib/mysql
+      - ./config/replica.cnf:/etc/mysql/conf.d/my.cnf
+    ports:
+      - "43307:3306"
+
 volumes:
   mysql-primary-data:
+  mysql-replica-data:
