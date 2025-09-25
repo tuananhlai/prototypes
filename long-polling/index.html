@@ -25,40 +25,69 @@
   </head>
   <body>
     <h1>Polling Go Server 📡</h1>
+    <button id="toggleBtn">Start</button>
     <ul id="messages"></ul>
   </body>
   <script>
     const messageList = document.querySelector("#messages");
+    const togglePollingBtn = document.querySelector("#toggleBtn");
+
+    let stopPollingFn;
+    togglePollingBtn.addEventListener("click", () => {
+      if (stopPollingFn == null) {
+        stopPollingFn = poll();
+        togglePollingBtn.textContent = "Stop";
+      } else {
+        stopPollingFn();
+        stopPollingBtn.textContent = "Start";
+        stopPollingFn = null;
+      }
+    });
 
     async function wait(ms) {
       return new Promise((resolve) => setTimeout(resolve, ms));
     }
 
+    /**
+     * @returns {() => void} A function to stop polling.
+     */
     async function poll() {
-      while (true) {
+      let isPolling = true;
+      let abortController = new AbortController();
+
+      while (isPolling) {
         try {
-          const res = await fetch("/poll");
+          const res = await fetch("/poll", {
+            signal: abortController.signal,
+          });
 
           if (res.status === 200) {
             const msg = await res.text();
             const newElem = document.createElement("li");
             newElem.textContent = msg;
-            messageList.appendChild(newElem);
+            messageList.prepend(newElem);
           } else if (res.status === 204) {
             console.log("Server timeout.");
             const newElem = document.createElement("li");
             newElem.textContent = "Request timed out.";
-            messageList.appendChild(newElem);
+            messageList.prepend(newElem);
           } else {
             throw new Error("unexpected error code");
           }
         } catch (e) {
+          if (e.name === "AbortError") {
+            console.error("Polling aborted: ", e);
+            break;
+          }
           console.error("Error polling: ", e);
           await wait(1000);
         }
       }
-    }
 
-    poll();
+      return () => {
+        isPolling = false;
+        abortController.abort();
+      };
+    }
   </script>
 </html>
