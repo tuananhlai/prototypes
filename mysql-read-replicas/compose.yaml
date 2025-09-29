@@ -12,7 +12,7 @@ services:
     volumes:
       - mysql-primary-data:/var/lib/mysql
       - ./config/primary.cnf:/etc/mysql/conf.d/my.cnf
-      - ./init:/docker-entrypoint-initdb.d/
+      - ./init:/docker-entrypoint-initdb.d
     ports:
       - "43306:3306"
     networks:
