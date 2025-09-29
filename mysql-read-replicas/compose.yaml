@@ -1,6 +1,6 @@
 services:
   mysql-primary:
-    image: public.ecr.aws/docker/library/mysql:8.4
+    image: mysql:8.0
     env_file: .env
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
@@ -15,9 +15,11 @@ services:
       - ./init:/docker-entrypoint-initdb.d/
     ports:
       - "43306:3306"
+    networks:
+      - mysql-net
 
   mysql-replica:
-    image: public.ecr.aws/docker/library/mysql:8.4
+    image: mysql:8.0
     env_file: .env
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
@@ -28,7 +30,13 @@ services:
       - ./config/replica.cnf:/etc/mysql/conf.d/my.cnf
     ports:
       - "43307:3306"
+    networks:
+      - mysql-net
 
 volumes:
   mysql-primary-data:
   mysql-replica-data:
+
+networks:
+  mysql-net:
+    driver: bridge
