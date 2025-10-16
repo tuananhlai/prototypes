@@ -18,6 +18,7 @@ const (
 // A minimal booking system to demonstrate the problem with concurrent database access.
 // Summary:
 // Naive approach: ~300ms, <10 seats assigned.
+// Subquery approach: ~300ms, <10 seats assigned.
 // Locked approach: ~1s, 100 seats assigned.
 // Optimized locked approach: ~300ms, 100 seats assigned. However, the time somes time reached 1s for some reason.
 func main() {
@@ -47,7 +48,7 @@ func main() {
 		wg.Add(1)
 		go func(i int) {
 			defer wg.Done()
-			_ = bookSeatLockedOptimized(db, i)
+			_ = bookSeatSubquery(db, i)
 		}(i)
 	}
 	wg.Wait()
@@ -168,6 +169,14 @@ func bookSeatLockedOptimized(db *sql.DB, customerID int) error {
 	}
 
 	return tx.Commit()
+}
+
+func bookSeatSubquery(db *sql.DB, customerID int) error {
+	_, err := db.Exec("UPDATE bookings SET customer_id = $1 WHERE seat_id = (SELECT seat_id FROM bookings WHERE customer_id IS NULL LIMIT 1)", customerID)
+	if err != nil {
+		return fmt.Errorf("error updating booking: %v", err)
+	}
+	return nil
 }
 
 func countBookedSeats(db *sql.DB) (int, error) {
