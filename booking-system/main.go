@@ -16,6 +16,10 @@ const (
 )
 
 // A minimal booking system to demonstrate the problem with concurrent database access.
+// Summary:
+// Naive approach: ~300ms, <10 seats assigned.
+// Locked approach: ~1s, 100 seats assigned.
+// Optimized locked approach: ~300ms, 100 seats assigned. However, the time somes time reached 1s for some reason.
 func main() {
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
