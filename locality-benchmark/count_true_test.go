@@ -21,8 +21,10 @@ func init() {
 			val := i == j
 			data[i][j] = val
 			x.Value = val
-			x.Next = &locality.ListNode{}
-			x = x.Next
+			if i < numRows-1 || j < numCols-1 {
+				x.Next = &locality.ListNode{}
+				x = x.Next
+			}
 		}
 	}
 }
