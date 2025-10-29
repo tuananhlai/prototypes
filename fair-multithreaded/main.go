@@ -9,8 +9,9 @@ import (
 )
 
 const (
-	fair   = "fair"
-	unfair = "unfair"
+	fair        = "fair"
+	fairChannel = "fair-channel"
+	unfair      = "unfair"
 )
 
 // go run main.go fair
@@ -33,6 +34,8 @@ func main() {
 	switch processingStyle {
 	case fair:
 		processTasksFair(tasks, numWorkers)
+	case fairChannel:
+		processTasksFairChannel(tasks, numWorkers)
 	case unfair:
 		processTasksUnfair(tasks, numWorkers)
 	default:
@@ -75,10 +78,10 @@ func processTasksUnfair(tasks []int, numWorkers int) {
 	wg.Wait()
 }
 
-// Process the given list of tasks in a fair manner. Each worker continues to process
+// processTasksFair processes the given list of tasks in a fair manner. Each worker continues to process
 // the latest unprocessed tasks until all tasks are finished.
 func processTasksFair(tasks []int, numWorkers int) {
-	log.Println("Processing tasks fairly...")
+	log.Println("Processing tasks fairly using atomic counters...")
 
 	var idx atomic.Int64
 	var wg sync.WaitGroup
@@ -104,6 +107,35 @@ func processTasksFair(tasks []int, numWorkers int) {
 			wg.Done()
 		}(i)
 	}
+
+	wg.Wait()
+}
+
+// processTasksFairChannel processes the given list of tasks in a fair manner. Each worker continues to process
+// the latest unprocessed tasks until all tasks are finished. Make use of a Go channel instead of an atomic counter.
+func processTasksFairChannel(tasks []int, numWorkers int) {
+	log.Println("Processing tasks fairly using Go channels...")
+	taskChan := make(chan int)
+
+	var wg sync.WaitGroup
+	for i := range numWorkers {
+		wg.Add(1)
+		go func(threadID int) {
+			startTime := time.Now()
+
+			for task := range taskChan {
+				processTask(task)
+			}
+
+			log.Println("Thread", threadID, "finished in", time.Since(startTime))
+			wg.Done()
+		}(i)
+	}
+
+	for _, task := range tasks {
+		taskChan <- task
+	}
+	close(taskChan)
 
 	wg.Wait()
 }
