@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	timeout = 2 * time.Second
+	timeout = 4 * time.Second
 )
 
 func main() {
@@ -30,7 +30,7 @@ func main() {
 func pollHandler(w http.ResponseWriter, r *http.Request) {
 	messageChan := make(chan string)
 	go func() {
-		randomDuration := time.Duration(rand.Intn(3)) * time.Second
+		randomDuration := time.Duration(rand.Intn(4)+1) * time.Second
 		time.Sleep(randomDuration)
 
 		messageChan <- fmt.Sprintf("Current time is: %s", time.Now())

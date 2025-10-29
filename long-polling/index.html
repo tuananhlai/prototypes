@@ -39,23 +39,20 @@
         togglePollingBtn.textContent = "Stop";
       } else {
         stopPollingFn();
-        stopPollingBtn.textContent = "Start";
+        togglePollingBtn.textContent = "Start";
         stopPollingFn = null;
       }
     });
 
-    async function wait(ms) {
+    function wait(ms) {
       return new Promise((resolve) => setTimeout(resolve, ms));
     }
 
-    /**
-     * @returns {() => void} A function to stop polling.
-     */
-    async function poll() {
-      let isPolling = true;
+    function poll() {
+      let timeoutId = null;
       let abortController = new AbortController();
 
-      while (isPolling) {
+      const loop = async () => {
         try {
           const res = await fetch("/poll", {
             signal: abortController.signal,
@@ -67,7 +64,6 @@
             newElem.textContent = msg;
             messageList.prepend(newElem);
           } else if (res.status === 204) {
-            console.log("Server timeout.");
             const newElem = document.createElement("li");
             newElem.textContent = "Request timed out.";
             messageList.prepend(newElem);
@@ -77,15 +73,21 @@
         } catch (e) {
           if (e.name === "AbortError") {
             console.error("Polling aborted: ", e);
-            break;
+            return;
           }
           console.error("Error polling: ", e);
           await wait(1000);
         }
-      }
+
+        // Execute recursive function asynchronously to prevent overflowing
+        // the call stack and prevent further execution.
+        timeoutId = setTimeout(loop, 0);
+      };
+
+      loop();
 
       return () => {
-        isPolling = false;
+        clearTimeout(timeoutId);
         abortController.abort();
       };
     }
