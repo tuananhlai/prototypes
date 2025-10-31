@@ -25,13 +25,15 @@ func main() {
 }
 
 type Repository struct {
-	cache map[string]string
-	mu    sync.Mutex
+	cache            map[string]string
+	lockManagerMutex sync.Mutex
+	lockMap          map[string]*sync.Mutex
 }
 
 func NewRepository() *Repository {
 	return &Repository{
-		cache: make(map[string]string),
+		cache:   make(map[string]string),
+		lockMap: make(map[string]*sync.Mutex),
 	}
 }
 
@@ -41,8 +43,9 @@ func (r *Repository) GetData(key string) string {
 		return r.cache[key]
 	}
 
-	r.mu.Lock()
-	defer r.mu.Unlock()
+	mu := r.getLockForCacheKey(key)
+	mu.Lock()
+	defer mu.Unlock()
 
 	// Try reading from the cache again
 	// to see if it has been updated by another thread.
@@ -59,4 +62,15 @@ func (r *Repository) getDataFromDatabase(key string) string {
 	log.Println("Reading from database")
 	time.Sleep(1 * time.Second)
 	return key
+}
+
+// getLockForCacheKey retrieves or creates a key-specific mutex
+func (r *Repository) getLockForCacheKey(key string) *sync.Mutex {
+	r.lockManagerMutex.Lock()
+	defer r.lockManagerMutex.Unlock()
+
+	if _, ok := r.lockMap[key]; !ok {
+		r.lockMap[key] = &sync.Mutex{}
+	}
+	return r.lockMap[key]
 }
