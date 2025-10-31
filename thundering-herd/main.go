@@ -7,19 +7,16 @@ import (
 )
 
 func main() {
-	cache := make(map[string]string)
+	numThreads := 10
+
+	repo := NewRepository()
 
 	var wg sync.WaitGroup
-	for i := range 10 {
+	for i := range numThreads {
 		wg.Add(1)
 		go func(threadID int) {
-			if _, ok := cache["key"]; !ok {
-				log.Println("Thread", threadID, "reading from database")
-				cache["key"] = readFromDatabase("key")
-			}
-
-			log.Println("Thread", threadID, "read value:", cache["key"])
-
+			data := repo.GetData("key")
+			log.Println("Thread", threadID, "read value:", data)
 			wg.Done()
 		}(i)
 	}
@@ -27,7 +24,39 @@ func main() {
 	wg.Wait()
 }
 
-func readFromDatabase(key string) string {
+type Repository struct {
+	cache map[string]string
+	mu    sync.Mutex
+}
+
+func NewRepository() *Repository {
+	return &Repository{
+		cache: make(map[string]string),
+	}
+}
+
+// GetData retrieves data from the cache or database.
+func (r *Repository) GetData(key string) string {
+	if _, ok := r.cache[key]; ok {
+		return r.cache[key]
+	}
+
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	// Try reading from the cache again
+	// to see if it has been updated by another thread.
+	_, ok := r.cache[key]
+	if !ok {
+		r.cache[key] = r.getDataFromDatabase(key)
+	}
+
+	return r.cache[key]
+}
+
+// getDataFromDatabase simulates an expensive database read operation.
+func (r *Repository) getDataFromDatabase(key string) string {
+	log.Println("Reading from database")
 	time.Sleep(1 * time.Second)
 	return key
 }
